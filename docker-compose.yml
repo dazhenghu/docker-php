@@ -19,6 +19,7 @@ services:
           - INSTALL_SOAP=${WORKSPACE_INSTALL_SOAP}
           - INSTALL_LDAP=${WORKSPACE_INSTALL_LDAP}
           - INSTALL_IMAP=${WORKSPACE_INSTALL_IMAP}
+          - INSTALL_MONGO=${WORKSPACE_INSTALL_MONGO}
           - INSTALL_PHPREDIS=${WORKSPACE_INSTALL_PHPREDIS}
           - INSTALL_NODE=${WORKSPACE_INSTALL_NODE}
           - INSTALL_YARN=${WORKSPACE_INSTALL_YARN}
@@ -65,6 +66,7 @@ services:
         args:
           - INSTALL_XDEBUG=${PHP_FPM_INSTALL_XDEBUG}
           - INSTALL_SOAP=${PHP_FPM_INSTALL_SOAP}
+          - INSTALL_MONGO=${PHP_FPM_INSTALL_MONGO}
           - INSTALL_ZIP_ARCHIVE=${PHP_FPM_INSTALL_ZIP_ARCHIVE}
           - INSTALL_BCMATH=${PHP_FPM_INSTALL_BCMATH}
           - INSTALL_PHPREDIS=${PHP_FPM_INSTALL_PHPREDIS}
@@ -85,12 +87,12 @@ services:
           - INSTALL_CALENDAR=true
           - INSTALL_MHASH=false
           - INSTALL_PCNTL=true
-          - INSTALL_SHMOP=true
-          - INSTALL_SOCKETS=false
+          - INSTALL_SHMOP=false
+          - INSTALL_SOCKETS=true
 #          - INSTALL_SSH2=false
           - INSTALL_MSGPACK=false
-          - INSTALL_SYSVMSG=false
-#          - INSTALL_SYSVMEM=false
+          - INSTALL_SYSVMSG=true
+          - INSTALL_SYSVSEM=true
           - INSTALL_SYSVSHM=true
           - INSTALL_WDDX=false
           - INSTALL_XSL=false
@@ -117,6 +119,7 @@ services:
             args:
               - INSTALL_XDEBUG=${PHP_FPM_INSTALL_XDEBUG}
               - INSTALL_SOAP=${PHP_FPM_INSTALL_SOAP}
+              - INSTALL_MONGO=${PHP_FPM_INSTALL_MONGO}
               - INSTALL_ZIP_ARCHIVE=${PHP_FPM_INSTALL_ZIP_ARCHIVE}
               - INSTALL_BCMATH=${PHP_FPM_INSTALL_BCMATH}
               - INSTALL_PHPREDIS=${PHP_FPM_INSTALL_PHPREDIS}
@@ -137,12 +140,12 @@ services:
               - INSTALL_CALENDAR=true
 #              - INSTALL_MHASH=false
               - INSTALL_PCNTL=true
-              - INSTALL_SHMOP=true
-              - INSTALL_SOCKETS=false
+              - INSTALL_SHMOP=false
+              - INSTALL_SOCKETS=true
     #          - INSTALL_SSH2=false
 #              - INSTALL_MSGPACK=false
-              - INSTALL_SYSVMSG=false
-    #          - INSTALL_SYSVMEM=false
+              - INSTALL_SYSVMSG=true
+              - INSTALL_SYSVSEM=true
               - INSTALL_SYSVSHM=true
 #              - INSTALL_WDDX=false
 #              - INSTALL_XSL=false
@@ -249,6 +252,39 @@ services:
       networks:
         - backend
 
+### MongoDB Container #######################################
+
+    mongo:
+      build: ./mongo
+      ports:
+        - "${MONGODB_PORT}:27017"
+        - "${MONGODB_STATUS_PORT}:28017"
+      volumes:
+        - ${DATA_SAVE_PATH}/mongo:/data/db
+        - ${MONGODB_CONFIG_DIR}:/etc/mongo
+      networks:
+        - backend
+        #mongo_net:
+        #  ipv4_address: 172.16.0.8
+      command: mongod --bind_ip 0.0.0.0
+
+        
+### Aerospike c Container ###################################
+
+    aerospike:
+      build: ./aerospike
+      volumes_from:
+        - workspace
+      volumes:
+        - ${DATA_SAVE_PATH}/aerospike:/opt/aerospike/data
+      ports:
+        - "${AEROSPIKE_SERVICE_PORT}:3000"
+        - "${AEROSPIKE_FABRIC_PORT}:3001"
+        - "${AEROSPIKE_HEARTBEAT_PORT}:3002"
+        - "${AEROSPIKE_INFO_PORT}:3003"
+      networks:
+        - backend
+
 ### Networks Setup ############################################
 
 networks:
@@ -256,6 +292,12 @@ networks:
     driver: "bridge"
   backend:
     driver: "bridge"
+  mongo_net:
+    driver: "bridge"
+    ipam:
+      config:
+      - subnet: 172.16.0.0/24
+        gateway: 172.16.0.254
 
 ### Volumes Setup #############################################
 
@@ -265,4 +307,6 @@ volumes:
   memcached:
     driver: "local"
   redis:
+    driver: "local"
+  mongo:
     driver: "local"
