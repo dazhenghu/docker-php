@@ -212,7 +212,7 @@ services:
 
 ### MySQL-SLAVE Container #########################################
 
-    mysql-slave:
+    mysql_slave:
       build:
         context: ./mysql-slave
         args:
